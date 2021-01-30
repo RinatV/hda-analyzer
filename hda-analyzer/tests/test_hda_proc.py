@@ -16,8 +16,10 @@ def test_add_device():
     # Второй девайс вызывает ошибку
     line = '  Device: name="VT1802 Alt Analog", type="Audio", device=2'
     assert line.startswith('  Device: ')
-    with pytest.raises(ValueError):
-        node.add_device(line[10:])
+    # with pytest.raises(ValueError):
+    node.add_device(line[10:])
 
-    assert node.device.name == 'VT1802 Analog'
+    assert node.device.name == 'VT1802 Alt Analog'
+    assert node.devices[0].name == 'VT1802 Analog'
+    assert node.devices[1].name == 'VT1802 Alt Analog'
 

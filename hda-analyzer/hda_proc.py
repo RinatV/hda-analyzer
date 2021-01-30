@@ -184,6 +184,7 @@ class ProcNode(HDABaseProc):
     self.wtype = (self.wcaps >> 20) & 0x0f
     self.wtype_id = WIDGET_TYPE_IDS[self.wtype]
     self.device = None
+    self.devices = []
     self.amp_vals = [[], []]
     self.connections = []
     self.params = {}
@@ -261,9 +262,10 @@ class ProcNode(HDABaseProc):
     line, name = self.decodestrw(line, 'name=')
     line, type = self.decodestrw(line, 'type=')
     line, device = self.decodeintw(line, 'device=')
-    if self.device:
-      self.wrongfile('more than one PCM device?')
+    # if self.device:
+    #   self.wrongfile('more than one PCM device?')
     self.device = HDApcmDevice(name, type, device)
+    self.devices.append(self.device)
 
   def get_device(self):
     return self.device
