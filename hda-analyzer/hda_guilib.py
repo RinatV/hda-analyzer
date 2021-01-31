@@ -671,8 +671,9 @@ class NodeGui(gtk.ScrolledWindow):
       mframe = gtk.Table()
 
     vbox = gtk.VBox(False, 0)
-    dev = node.get_device()
-    if not dev is None:
+    # dev = node.get_device()
+    # if not dev is None:
+    for dev in node.get_devices():
       vbox.pack_start(self.__build_device(dev), False, False)
     ctrls = node.get_controls()
     if ctrls:

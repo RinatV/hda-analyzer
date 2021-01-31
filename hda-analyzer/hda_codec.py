@@ -849,6 +849,9 @@ class HDANode:
   def get_device(self):
     return self.codec.get_device(self.nid)
 
+  def get_devices(self):
+    return self.codec.get_devices(self.nid)
+
   def get_controls(self):
     return self.codec.get_controls(self.nid)
 
@@ -1531,6 +1534,11 @@ class HDACodec:
   def get_device(self, nid):
     if self.proc_codec:
       return self.proc_codec.get_device(nid)
+    return None
+
+  def get_devices(self, nid):
+    if self.proc_codec:
+      return self.proc_codec.get_devices(nid)
     return None
 
   def get_controls(self, nid):

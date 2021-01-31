@@ -183,7 +183,7 @@ class ProcNode(HDABaseProc):
     self.wcaps = wcaps
     self.wtype = (self.wcaps >> 20) & 0x0f
     self.wtype_id = WIDGET_TYPE_IDS[self.wtype]
-    self.device = None
+    self._device = None
     self.devices = []
     self.amp_vals = [[], []]
     self.connections = []
@@ -202,6 +202,15 @@ class ProcNode(HDABaseProc):
       self.add_verb(VERBS['GET_CONV' ], 0)
     if self.wtype_id == 'AUD_IN':
       self.add_verb(VERBS['GET_SDI_SELECT'], 0)
+
+  def device_getter(self):
+    return self._device
+
+  def device_setter(self, obj):
+    self._device = obj
+
+  device = property(device_getter, device_setter)
+
 
   def rw(self, verb, param):
     if verb in self.verbs:
@@ -264,11 +273,14 @@ class ProcNode(HDABaseProc):
     line, device = self.decodeintw(line, 'device=')
     # if self.device:
     #   self.wrongfile('more than one PCM device?')
-    self.device = HDApcmDevice(name, type, device)
-    self.devices.append(self.device)
+    self._device = HDApcmDevice(name, type, device)
+    self.devices.append(self._device)
 
   def get_device(self):
-    return self.device
+    return self._device
+
+  def get_devices(self):
+    return self.devices
 
   def add_converter(self, line):
     line, stream = self.decodeintw(line, 'stream=')
@@ -390,7 +402,7 @@ class ProcNode(HDABaseProc):
     self.connections = conns
     self.add_verb(VERBS['GET_CONNECT_SEL'], sel)
     return res
-    
+
   def add_unsolicited(self, line):
     line, tag = self.decodeintw(line, 'tag=', forcehex=True)
     line, enabled = self.decodeintw(line, 'enabled=')
@@ -430,7 +442,7 @@ class ProcNode(HDABaseProc):
     else:
       self.wrongfile('power actual %s' % actual)
     self.add_verb(VERBS['GET_POWER_STATE'], (setting & 0x0f) | ((actual & 0x0f) << 4))
-  
+
   def add_powerstates(self, line):
     a = line.strip().split(' ')
     tmp1 = 0
@@ -444,7 +456,7 @@ class ProcNode(HDABaseProc):
     line, ncoeff = self.decodeintw(line, 'ncoeff=')
     self.add_param(PARAMS['PROC_CAP'],
                     (benign & 1) | ((ncoeff & 0xff) << 8))
-  
+
   def add_processcoef(self, line):
     line, coef = self.decodeintw(line, '')
     self.add_verb(VERBS['GET_PROC_COEF'], coef)
@@ -463,8 +475,8 @@ class ProcNode(HDABaseProc):
 
   def dump_extra(self):
     str = ''
-    if self.device:
-      str += self.device.dump_extra()
+    if self._device:
+      str += self._device.dump_extra()
     for c in self.controls:
       str += c.dump_extra()
     return str
@@ -513,7 +525,7 @@ class HDACodecProc(HDACodec, HDABaseProc):
         else:
           res1 = 0
         return idx + 1, ((res1 & 1) << 8) | (res & 0xff)
-      return idx, 0        
+      return idx, 0
 
     def decodeampcap(idx, prefix):
       if lines[idx].startswith(prefix):
@@ -543,7 +555,7 @@ class HDACodecProc(HDACodec, HDABaseProc):
       self.wrongfile('gpio caps expected')
 
     def decodegpio(idx, prefix):
-    
+
       def writeval(str, idx, var):
         res, val = self.decodeintw(str, var + '=')
         if val:
@@ -551,7 +563,7 @@ class HDACodecProc(HDACodec, HDABaseProc):
         else:
           self.proc_gpio[var] &= ~(1 << idx)
         return res
-    
+
       res = lines[idx]
       res, idx1 = self.decodeintw(res, prefix)
       if res.startswith(': '):
@@ -674,25 +686,25 @@ class HDACodecProc(HDACodec, HDABaseProc):
         elif line.startswith('    ControlAmp: '):
           node.add_controlamp(line[16:])
         elif line.startswith('  Converter: '):
-          node.add_converter(line[13:]) 
+          node.add_converter(line[13:])
         elif line.startswith('  SDI-Select: '):
-          node.add_sdiselect(line[14:]) 
+          node.add_sdiselect(line[14:])
         elif line.startswith('  Digital:'):
-          node.add_digital(line[11:]) 
+          node.add_digital(line[11:])
         elif line.startswith('  Unsolicited:'):
-          node.add_unsolicited(line[15:]) 
+          node.add_unsolicited(line[15:])
         elif line.startswith('  Digital category:'):
-          node.add_digitalcategory(line[20:]) 
+          node.add_digitalcategory(line[20:])
         elif line.startswith('  IEC Coding Type: '):
           pass
         elif line.startswith('  Amp-In caps: '):
-          node.add_ampcaps(line[15:], HDA_INPUT) 
+          node.add_ampcaps(line[15:], HDA_INPUT)
         elif line.startswith('  Amp-Out caps: '):
-          node.add_ampcaps(line[16:], HDA_OUTPUT) 
+          node.add_ampcaps(line[16:], HDA_OUTPUT)
         elif line.startswith('  Amp-In vals: '):
-          node.add_ampvals(line[15:], HDA_INPUT) 
+          node.add_ampvals(line[15:], HDA_INPUT)
         elif line.startswith('  Amp-Out vals: '):
-          node.add_ampvals(line[17:], HDA_OUTPUT) 
+          node.add_ampvals(line[17:], HDA_OUTPUT)
         elif line.startswith('  Connection: '):
           if idx + 1 < len(lines):
             idx += node.add_connection(line[13:], lines[idx+1])
@@ -797,7 +809,7 @@ class HDACodecProc(HDACodec, HDABaseProc):
   def get_wcap(self, nid):
     node = self.proc_nids[nid]
     return node.wcaps
-  
+
   def get_raw_wcap(self, nid):
     return get_wcap(self, nid)
 
@@ -828,6 +840,12 @@ class HDACodecProc(HDACodec, HDABaseProc):
       return None
     node = self.proc_nids[nid]
     return node.get_device()
+
+  def get_devices(self, nid):
+    if not nid in self.proc_nids:
+      return None
+    node = self.proc_nids[nid]
+    return node.get_devices()
 
   def get_controls(self, nid):
     if not nid in self.proc_nids:
