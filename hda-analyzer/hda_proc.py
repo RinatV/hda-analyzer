@@ -475,8 +475,9 @@ class ProcNode(HDABaseProc):
 
   def dump_extra(self):
     str = ''
-    if self._device:
-      str += self._device.dump_extra()
+    for device in self.devices:
+    # if self._device:
+      str += device.dump_extra()
     for c in self.controls:
       str += c.dump_extra()
     return str

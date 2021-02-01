@@ -182,6 +182,9 @@ class HDAAnalyzer(gtk.Window):
     button.connect("clicked", self.__export_clicked)
     self.tooltips.set_tip(button, "Export settings differences for selected codec.\nGenerates a python script.")
     hbox1.pack_start(button)
+    button = gtk.Button("Exp2")
+    button.connect("clicked", self.__export_clicked2)
+    hbox1.pack_start(button)
     button = gtk.Button("Graph")
     button.connect("clicked", self.__graph_clicked)
     self.tooltips.set_tip(button, "Show graph for selected codec.")
@@ -280,6 +283,30 @@ mailing list, too.
     dialog.run()
     dialog.destroy()
     
+  def __export_clicked2(self, button):
+    if not self.codec:
+      self.simple_dialog(gtk.MESSAGE_WARNING, "Please, select a codec in left codec/node tree.")
+      return
+    sdialog = gtk.FileChooserDialog('Save card-%s__codec-%s as...' % (self.codec.card, self.codec.device),
+                  self, gtk.FILE_CHOOSER_ACTION_SAVE,
+                   (gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
+                    gtk.STOCK_SAVE, gtk.RESPONSE_OK))
+    sdialog.set_default_response(gtk.RESPONSE_OK)
+
+    filter = gtk.FileFilter()
+    filter.set_name("All files")
+    filter.add_pattern("*")
+    sdialog.add_filter(filter)
+
+    sdialog.set_current_name('card-%s__codec-%s.txt' % (self.codec.card, self.codec.device))
+
+    sr = sdialog.run()
+    if sr == gtk.RESPONSE_OK:
+      str = self.codec.dump()
+      save_to_file(sdialog.get_filename(), str, 0755)
+    sdialog.destroy()
+
+
   def __export_clicked(self, button):
     if not self.codec:
       self.simple_dialog(gtk.MESSAGE_WARNING, "Please, select a codec in left codec/node tree.")
